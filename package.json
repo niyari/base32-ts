@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "Base32 encode/decode for TypeScript.",
   "main": "dist/base32.js",
+  "types": "dist/base32.d.ts",
   "scripts": {
     "test": "node ./test/test.js"
   },
