@@ -17,20 +17,20 @@ ECMAScript 2020 and later. (Using BigInt within Crockford.)
 ## Usage
 ### RFC4648
 ```js
-const base32 = new Base32(); // RFC4648
+const base32 = new Base32();
 let base32_encoded = base32.encode('foobar');
 // str = "MZXW6YTBOI======"
-let base32_decoded = base32.decode('MZXW6YTBOI======'); // RFC4648
+let base32_decoded = base32.decode('MZXW6YTBOI======');
 // str = "foobar"
 ```
 
 
 ### RFC4648_HEX
 ```js
-const base32_hex = new Base32({ variant: 'hex'}); // RFC4648_HEX
+const base32_hex = new Base32({ variant: 'hex'});
 base32_hex.encode('foobar');
 // str = "CPNMUOJ1E8======"
-base32_hex.decode('CPNMUOJ1E8======'); // RFC4648_HEX
+base32_hex.decode('CPNMUOJ1E8======');
 // str = "foobar"
 ```
 
@@ -40,7 +40,7 @@ base32_hex.decode('CPNMUOJ1E8======'); // RFC4648_HEX
 const base32_clockwork = new Base32({ variant: 'clockwork' }); // Clockwork (short name 'maki')
 base32_clockwork.encode('foobar');
 // str = "CSQPYRK1E8"
-base32_clockwork.decode('CSQPYRK1E8'); // Clockwork
+base32_clockwork.decode('CSQPYRK1E8');
 // str = "foobar"
 ```
 
@@ -58,9 +58,12 @@ _ | RFC4648 | HEX | Clockwork  | Crockford
 **default**| True | True | False | -
 
 ```js
-const base32_np = new Base32({ variant: '4648', padding: false }); // RFC4648 no padding
+const base32_np = new Base32({ padding: false }); // RFC4648 no padding
 base32_np.encode('foobar');
 // str = "MZXW6YTBOI"
+const b32_cw_pad = new Base32({ variant: 'maki', padding: true }); // Clockwork use padding
+b32_cw_pad.encode('foobar');
+// str = "CSQPYRK1E8======"
 ```
 
 
@@ -69,7 +72,7 @@ Return Uint8Array.
 
 _ | RFC4648 | HEX | Clockwork  | Crockford
 ---: | :---: | :---: | :---: | :---:
-**default**| False | False | False | False 
+**default**| False | False | False | False(hexadecimal strings) 
 
 ```js
 base32.decode('MZXW6YTBOI======'); // (default)
@@ -86,10 +89,10 @@ Encode an integer into a CrockfordSymbol string.
 
 ### Usage
 ```js
-const base32_crockford = new Base32({ variant: 'crockford' }); // Crockford
+const base32_crockford = new Base32({ variant: 'crockford' });
 base32_crockford.encode(1234);
-// str = "16JD"
-base32_crockford.decode('16JD');
+// str = "16J"
+base32_crockford.decode('16J');
 // str = "0x04d2" = 1234
 ```
 
