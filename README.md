@@ -1,6 +1,19 @@
 # base32-ts
 Base32 encode/decode for TypeScript
 
+## Install
+```sh
+npm i @niyari/base32-ts
+```
+
+## Supported Browsers
+ECMAScript 2020 and later. (Using BigInt within Crockford.)
+
+* Chrome 89+
+* Firefox 87+
+* Safari 14+
+* Edge(Chromium) 89+
+
 ## Usage
 ### RFC4648
 ```js
@@ -31,38 +44,84 @@ base32_clockwork.decode('CSQPYRK1E8'); // Clockwork
 // str = "foobar"
 ```
 
-
-### Crockford (WIP)
-According to the published specification, it seems that the data before encoding must be numeric.
-```js
-const base32_crockford = new Base32({ variant: 'crockford' }); // Crockford
-base32_crockford.encode('foobar');
-// str = "CSQPYRK1E8"
-```
-
-### Encoding multibyte character set.
+### Encoding multibyte character set
 ```js
 base32.encode('Tofu on Fire!📛'); // (📛 = Name Badge:for Japanese preschoolers.)
 // str = "KRXWM5JAN5XCARTJOJSSD4E7SONQ===="
 ```
 
+
 ## Options
-### Encode: no padding. ( = ) 
+### Encode: Set padding ( = ) 
+_ | RFC4648 | HEX | Clockwork  | Crockford
+---: | :---: | :---: | :---: | :---:
+**default**| True | True | False | -
+
 ```js
 const base32_np = new Base32({ variant: '4648', padding: false }); // RFC4648 no padding
 base32_np.encode('foobar');
 // str = "MZXW6YTBOI"
 ```
-### Decode: Raw Data
+
+
+### Decode: Raw
+Return Uint8Array.
+
+_ | RFC4648 | HEX | Clockwork  | Crockford
+---: | :---: | :---: | :---: | :---:
+**default**| False | False | False | False 
+
 ```js
 base32.decode('MZXW6YTBOI======'); // (default)
 base32.decode('MZXW6YTBOI======', { raw: false });
-// Return value: TextDecoder().decode(output.buffer)
+// Return value: TextDecoder().decode(output.buffer) -> String
 
 base32.decode('MZXW6YTBOI======', { raw: true });
-// Return value: Uint8Array
+// Return value: Uint8Array object
 ```
 
+
+## Crockford
+Encode an integer into a CrockfordSymbol string.
+
+### Usage
+```js
+const base32_crockford = new Base32({ variant: 'crockford' }); // Crockford
+base32_crockford.encode(1234);
+// str = "16JD"
+base32_crockford.decode('16JD');
+// str = "0x04d2" = 1234
+```
+
+In decoding, the misleading character "IiLl" is treated as 1 and "Oo" is treated as 0.
+```js
+base32_crockford.decode('IiLl10Oo');
+// str = "0x842108000"
+```
+
+
+#### Encode: Checksum
+```js
+base32_crockford.encode(1234, { checksum: true });
+// str = "16JD"
+base32_crockford.decode('16JD', { checksum: true });
+// str = "0x04d2" = 1234
+```
+
+
+#### Encode: Split
+```js
+base32_crockford.encode(123456, { split: 2 });
+// str = "3R-J0"
+base32_crockford.encode(123456, { split: 1 });
+// str = "3-R-J-0"
+```
+
+#### Decode: Raw
+```js
+base32_crockford.decode(123456, { raw: true });
+// Uint8Array object
+```
 
 
 ## TODO:
