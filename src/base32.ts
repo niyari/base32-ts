@@ -1,18 +1,17 @@
 /*! github.com/niyari/base32-ts/ MIT */
+
 type Variant = '3548' | '4648' | 'hex' | 'clockwork' | 'maki' | 'wah' | 'crockford' | '';
-interface DictionaryTypes {
+interface ModeArray {
     dic: string;
     padding: boolean;
-    validStr: string;
-    variantName: Variant;
+    re: RegExp;
+    name: Variant;
+    array?: boolean;
 }
-interface LastErrorTypes {
-    isError: boolean;
-    errorMessage: string;
-}
-interface EncoderOptions {
+interface Base32Options {
     variant?: Variant;
     padding?: boolean;
+    array?: boolean;
 }
 interface DecoderOption {
     raw?: boolean;
@@ -25,38 +24,48 @@ interface CrockFordDecoderOptions {
     checksum?: boolean;
     raw?: boolean;
 }
+interface LastErrorTypes {
+    isError: boolean;
+    message: string;
+}
+interface ReturnArray {
+    data: string | ArrayBuffer;
+    error?: LastErrorTypes;
+}
 
 export class Base32 {
-    private _dicType: DictionaryTypes = { dic: '', padding: true, validStr: '', variantName: '' };
-    private _lastError: LastErrorTypes = { isError: false, errorMessage: '' };
+    private _mode: ModeArray = { dic: '', padding: true, re: / /, name: '' };
+    private _lastError: LastErrorTypes = { isError: false, message: '' };
 
-    constructor(options: EncoderOptions = {}) {
-        this._dicType = this.getDictionaryType(options.variant);
+    constructor(options: Base32Options = {}) {
+        let mode = this._mode = this.setMode(options.variant);
         if (options.padding !== undefined) {
             if (options.padding === true) {
-                this._dicType.padding = true;
+                mode.padding = true;
             } else {
-                this._dicType.padding = false;
+                mode.padding = false;
             }
         }
-        if (this._dicType.variantName === 'crockford') {
+        if (options.array !== undefined && options.array) {
+            mode.array = true;
+        }
+        if (mode.name === 'crockford') {
             this.encode = this.crockfordEncoder;
             this.decode = this.crockfordDecoder;
         } else {
             this.encode = this.multiEncoder;
             this.decode = this.multiDecoder;
         }
-
     }
 
-    private getDictionaryType(variant: Variant = '4648'): DictionaryTypes {
+    private setMode(variant: Variant = '4648'): ModeArray {
         switch (variant) {
             case 'hex': // RFC4648_HEX
                 return {
                     dic: '0123456789ABCDEFGHIJKLMNOPQRSTUV',
                     padding: true,
-                    validStr: '^(()|[a-v0-9=]+)$',
-                    variantName: 'hex'
+                    re: /^(()|[A-V0-9=]+)$/,
+                    name: 'hex'
                 }
             case 'maki':
             case 'wah':
@@ -64,33 +73,32 @@ export class Base32 {
                 return {
                     dic: '0123456789ABCDEFGHJKMNPQRSTVWXYZ',
                     padding: false,
-                    validStr: '^(()|[a-tv-z0-9=]+)$',
-                    variantName: 'clockwork'
+                    re: /^(()|[A-TV-Z0-9=]+)$/,
+                    name: 'clockwork'
                 }
             case 'crockford':
                 return {
                     dic: '0123456789ABCDEFGHJKMNPQRSTVWXYZ',
                     padding: false,
-                    validStr: '^(()|[a-tv-z0-9*~$=u]+)$',
-                    variantName: 'crockford'
+                    re: /^(()|[A-TV-Z0-9*~$=U]+)$/,
+                    name: 'crockford'
                 }
             default: // RFC3548 or RFC4648
         }
         return {
             dic: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567',
             padding: true,
-            validStr: '^(()|[a-z2-7=]+)$',
-            variantName: '4648'
+            re: /^(()|[A-Z2-7=]+)$/,
+            name: '4648'
         }
-
     }
 
-    private crockfordEncoder(input: bigint | Number, options: CrockFordEncoderOptions = {}) {
+    private crockfordEncoder(input: bigint | Number, options: CrockFordEncoderOptions = {}): string | ReturnArray {
         this.resetError();
 
         let input32 = '';
         let output = '';
-        const dic = this._dicType.dic;
+        const dic = this._mode.dic;
 
         if (typeof input === "number") {
             input = Math.floor(input);
@@ -101,9 +109,9 @@ export class Base32 {
             }
         }
         if (input32.length < 1) {
-            this._lastError = { isError: true, errorMessage: 'Invalid data: input number.' };
+            this.setError('Invalid data: input number.');
             console.log("Invalid data: input number.");
-            return '';
+            return <string | ReturnArray>this.returnArray('');
         }
 
         const check_symbol = () => {
@@ -126,23 +134,19 @@ export class Base32 {
                 output = output.match(reg)!.join('-');
             }
         }
-        return output;
+
+        return <string | ReturnArray>this.returnArray(output);
     }
 
-    private multiEncoder(input: Uint8Array | string): string {
+    private multiEncoder(input: Uint8Array | string): string | ReturnArray {
         this.resetError();
 
-        /*
-        if (typeof input === "string" || typeof input === "number" || typeof input === "bigint") {
-            input = new TextEncoder().encode(input);
-        }
-         */
         if (typeof input !== "object") {
             input = new TextEncoder().encode(input);
         }
         input = new Uint8Array(input);
 
-        const dic = this._dicType.dic;
+        const dic = this._mode.dic;
         let output = '';
         let value = 0;
         let offset = 0;
@@ -160,25 +164,24 @@ export class Base32 {
             output += dic[(value << (5 - offset)) & 31];
         }
 
-        if (this._dicType.padding) {
+        if (this._mode.padding) {
             while (output.length % 8 !== 0) {
                 output += '=';
             }
         }
-        return output;
+        return <string | ReturnArray>this.returnArray(output);
     }
 
-    private crockfordDecoder(input: string = '', options: CrockFordDecoderOptions = {}): string | Uint8Array {
+    private crockfordDecoder(input: string = '', options: CrockFordDecoderOptions = {}): string | ArrayBuffer | ReturnArray {
         this.resetError();
-        input = input.toUpperCase().replace(/-/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
-        const reg = new RegExp(this._dicType.validStr, 'i');
-        if (reg.test(input) === false) {
-            this._lastError = { isError: true, errorMessage: 'Invalid data: input strings.' };
+        input = input.toUpperCase().replace(/[-\s]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
+        if (this._mode.re.test(input) === false) {
+            this.setError('Invalid data: input strings.');
             console.log("Invalid data: input strings.");
             input = '';
         }
 
-        const dic = this._dicType.dic;
+        const dic = this._mode.dic;
         const check_symbol = input.slice(-1);
         if (options.checksum) {
             input = input.slice(0, -1);
@@ -212,38 +215,37 @@ export class Base32 {
                 return (BigInt('0x' + hexStr) % BigInt(37) !== BigInt('0123456789ABCDEFGHJKMNPQRSTVWXYZ*~$=U'.indexOf(check_symbol)));
             };
             if (verify_symbol(outputHexStr)) {
-                this._lastError = { isError: true, errorMessage: 'Invalid data: Checksum error.' };
+                this.setError('Invalid data: Checksum error.');
                 console.log("Invalid data: Checksum error.");
             }
         }
 
         if (this._lastError.isError) {
             if (options.raw) {
-                return new Uint8Array(1);
+                return this.returnArray(new Uint8Array(1));
             }
             outputHexStr = '0';
         }
         if (options.raw) {
-            return output;
+            return this.returnArray(output);
         }
-        return ('0x' + outputHexStr).replace(/^(0x0+)/, '0x');
+        return this.returnArray(('0x' + outputHexStr).replace(/(^0x0+)(?<!0$)/, '0x'));
     }
 
-    private multiDecoder(input: string = '', options: DecoderOption = {}): string | ArrayBuffer {
+    private multiDecoder(input: string = '', options: DecoderOption = {}): string | ArrayBuffer | ReturnArray {
         this.resetError();
 
-        input = input.toUpperCase().replace(/\=+$/, '');
-        if (this._dicType.variantName === 'clockwork') {
+        input = input.toUpperCase().replace(/\=+$/, '').replace(/[\s]/g, '');
+        if (this._mode.name === 'clockwork') {
             input = input.replace(/O/g, '0').replace(/[IL]/g, '1');
         }
-        const reg = new RegExp(this._dicType.validStr, 'i');
-        if (reg.test(input) === false) {
-            this._lastError = { isError: true, errorMessage: 'Invalid data: input strings.' };
-            console.log("Invalid data: input strings.");
+        if (this._mode.re.test(input) === false) {
+            this.setError('Invalid data: Input strings.');
+            console.log("Invalid data: Input strings.");
             input = '';
         }
 
-        const dic = this._dicType.dic;
+        const dic = this._mode.dic;
         const length = input.length;
         const output = new Uint8Array(length * 5 / 8);
 
@@ -252,11 +254,6 @@ export class Base32 {
         let offset = 0;
 
         for (let i = 0; i < length; i++) {
-            if (dic.indexOf(input[i]) === -1) {
-                this._lastError = { isError: true, errorMessage: 'Invalid data: input strings. ' + input[i] };
-                console.log("Invalid character: Out of range.", input[i]);
-                break;
-            }
             value = (value << 5) | dic.indexOf(input[i]);
             offset += 5;
 
@@ -267,13 +264,28 @@ export class Base32 {
         }
 
         if (options.raw) {
-            return output;
+            return this.returnArray(output);
         }
-        return new TextDecoder().decode(output.buffer);
+        return this.returnArray(new TextDecoder().decode(output.buffer));
+    }
+
+    private returnArray(data: string | ArrayBuffer): string | ArrayBuffer | ReturnArray {
+        if (!this._mode.array) {
+            return <string | ArrayBuffer>data;
+        }
+        let ret: ReturnArray = { data: data };
+        if (this._lastError.isError) {
+            ret.error = this._lastError;
+        }
+        return ret;
+    }
+
+    private setError(message: string): void {
+        this._lastError = { isError: !0, message: message };
     }
 
     private resetError(): void {
-        this._lastError = { isError: false, errorMessage: '' };
+        this._lastError = { isError: !1, message: '' };
     }
 
     public encode;

@@ -30,10 +30,56 @@ import { Base32 } from "../dist/base32.js";
         _logTime = performance.now();
     }
     try {
+        logTitle('Function:getDictionaryType');
+        const base32_f = new Base32();
+
+        const DicTypeCheck = (t, u) => {
+            const DicTypes = {
+                'hex': {
+                    dic: '0123456789ABCDEFGHIJKLMNOPQRSTUV',
+                    padding: true,
+                    re: '^(()|[A-V0-9=]+)$',
+                    name: 'hex'
+                }, 'clockwork': {
+                    dic: '0123456789ABCDEFGHJKMNPQRSTVWXYZ',
+                    padding: false,
+                    re: '^(()|[A-TV-Z0-9=]+)$',
+                    name: 'clockwork'
+                }, 'crockford': {
+                    dic: '0123456789ABCDEFGHJKMNPQRSTVWXYZ',
+                    padding: false,
+                    re: '^(()|[A-TV-Z0-9*~$=U]+)$',
+                    name: 'crockford'
+                }, '4648': {
+                    dic: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567',
+                    padding: true,
+                    re: '^(()|[A-Z2-7=]+)$',
+                    name: '4648'
+                }
+            };
+            ['dic', 'padding', 're', 'name'].map(target => {
+                if (target === 're') {
+                    checkToBe(t[target].source, DicTypes[u][target], `${u} ${target}`);
+
+                } else {
+                    checkToBe(t[target], DicTypes[u][target], `${u} ${target}`);
+                }
+            })
+
+        }
+        DicTypeCheck(base32_f.setMode(), '4648');
+        DicTypeCheck(base32_f.setMode('hex'), 'hex');
+        DicTypeCheck(base32_f.setMode('clockwork'), 'clockwork');
+        DicTypeCheck(base32_f.setMode('crockford'), 'crockford');
+        DicTypeCheck(base32_f.setMode('4648'), '4648');
+        logResult();
+
         logTitle('RFC4648');
         const base32 = new Base32();
         checkToBe(base32.encode('foobar'), 'MZXW6YTBOI======', 'Encode');
         checkToBe(base32.decode('MZXW6YTBOI======'), 'foobar', 'Decode');
+        checkToBe(base32.encode(12345678901234567890n), 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ', 'Encode (Numeric literal)');
+        checkToBe(base32.decode("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"), '12345678901234567890', 'Decode (Numeric literal)');
         logResult();
 
         logTitle('RFC4648_HEX');
@@ -95,6 +141,23 @@ import { Base32 } from "../dist/base32.js";
         checkToBe(Number(base32_crockford.decode('IiLl10Oo')), 35468115968, 'ilo (IiLl10Oo->11111000)');
         checkToBe(Number(base32_crockford.decode('1-4-S-C-0-P-JV', { checksum: true })), 1234567890, 'Split and Checksum');
         checkToBe(ArrayBuffer.isView(base32_crockford.decode('-14SC--0PJV-', { checksum: true, raw: true })), true, 'Split, Checksum and return Uint8Array');
+        logResult();
+
+        logTitle('Decode RegExp \\s');
+        checkToBe(base32.decode("MZX\n\r W 6 Y T B O \t  I======"), 'foobar', 'Base32');
+        checkToBe(Number(base32_crockford.decode("1-4\n-S\r-C-\t 0-P-JV", { checksum: true })), 1234567890, 'Crockford');
+        logResult();
+
+        logTitle('Return Array');
+        const base32_arr = new Base32({ 'array': true, raw: true });
+        const ret_base32_arr=base32_arr.decode('MZXW6YTBOI======');
+        checkToBe(ret_base32_arr.data, 'foobar', 'Base32');
+
+        const base32_crockford_arr = new Base32({ variant: 'crockford', 'array': true });
+        const ret_base32_crockford_arr=base32_crockford_arr.decode('14SC0PJV0', { checksum: true });
+        checkToBe(ret_base32_crockford_arr.data, '0x0', 'Crockford: error value');
+        checkToBe(ret_base32_crockford_arr.error.isError, true, 'isError');
+        checkToBe(ret_base32_crockford_arr.error.message, 'Invalid data: Checksum error.', 'message');
         logResult();
 
 
