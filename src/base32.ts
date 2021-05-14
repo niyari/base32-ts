@@ -134,7 +134,6 @@ export class Base32 {
                 output = output.match(reg)!.join('-');
             }
         }
-
         return <string | ReturnArray>this.returnArray(output);
     }
 
@@ -172,13 +171,13 @@ export class Base32 {
         return <string | ReturnArray>this.returnArray(output);
     }
 
-    private crockfordDecoder(input: string = '', options: CrockFordDecoderOptions = {}): string | ArrayBuffer | ReturnArray {
+    private crockfordDecoder(input: string = '0', options: CrockFordDecoderOptions = {}): string | ArrayBuffer | ReturnArray {
         this.resetError();
         input = input.toUpperCase().replace(/[-\s]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
         if (this._mode.re.test(input) === false) {
             this.setError('Invalid data: input strings.');
             console.log("Invalid data: input strings.");
-            input = '';
+            input = '0';
         }
 
         const dic = this._mode.dic;

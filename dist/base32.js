@@ -123,13 +123,13 @@ export class Base32 {
         }
         return this.returnArray(output);
     }
-    crockfordDecoder(input = '', options = {}) {
+    crockfordDecoder(input = '0', options = {}) {
         this.resetError();
         input = input.toUpperCase().replace(/[-\s]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
         if (this._mode.re.test(input) === false) {
             this.setError('Invalid data: input strings.');
             console.log("Invalid data: input strings.");
-            input = '';
+            input = '0';
         }
         const dic = this._mode.dic;
         const check_symbol = input.slice(-1);
