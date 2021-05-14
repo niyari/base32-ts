@@ -1,6 +1,6 @@
 {
   "name": "@niyari/base32-ts",
-  "version": "0.0.1",
+  "version": "0.0.2-0",
   "description": "Base32 encode/decode for TypeScript.",
   "main": "dist/base32.js",
   "types": "dist/base32.d.ts",
