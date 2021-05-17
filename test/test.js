@@ -100,6 +100,15 @@ import { Base32 as B } from "../dist/base32.js";
         cToBe(clkw.decode('CSQPYRK1E8'), 'foobar', 'Decode');
         lResult();
 
+        lStart('Clockwork Reference test');
+        cToBe(clkw.encode(''), '', 'Encode: (empty)');
+        cToBe(clkw.encode('f'), 'CR', 'Encode: f');
+        cToBe(clkw.encode('Hello, world!'), '91JPRV3F5GG7EVVJDHJ22', 'Encode: Hello, world!');
+        cToBe(clkw.encode('The quick brown fox jumps over the lazy dog.'), 'AHM6A83HENMP6TS0C9S6YXVE41K6YY10D9TPTW3K41QQCSBJ41T6GS90DHGQMY90CHQPEBG', 'Encode: The quick brown fox ...');
+        cToBe(clkw.decode('CR'), 'f', 'Decode CR');
+        cToBe(clkw.decode('CR0'), 'f', 'Decode CR0');
+        lResult();
+
 
         lStart('RFC4648/HEX Encode. padding set: true(by default) -> false');
         const b32_pad_on = new B({ padding: true });
@@ -116,49 +125,58 @@ import { Base32 as B } from "../dist/base32.js";
         lResult();
 
         lStart('RFC4648/HEX Decode. return Uint8Array');
-        cToBe(ArrayBuffer.isView(b32.decode('MZXW6YTBOI======', { raw: true })), true, 'raw:true');
-        cToBe(typeof b32.decode('MZXW6YTBOI======', { raw: false }), 'string', 'raw:false');
+        const b32_raw_on = new B({ raw: true });
+        cToBe(ArrayBuffer.isView(b32_raw_on.decode('MZXW6YTBOI======')), true, 'raw:true');
+        const b32_raw_off = new B({ raw: false });
+        cToBe(typeof b32_raw_off.decode('MZXW6YTBOI======'), 'string', 'raw:false');
         lResult();
 
         lStart('Crockford Base32 Encode');
         const crf = new B({ variant: 'crockford' });
-        cToBe(crf.encode(), '', 'Encode');
+        cToBe(crf.encode(), '', 'Encode'); //error Invalid data: input number.
+        cToBe(crf.encode(0), '0', 'Encode');
         cToBe(crf.encode(1234), '16J', 'Encode');
         cToBe(crf.encode(4.2), '4', 'Encode (value 4.2)');
 
-        cToBe(crf.encode(1234, { checksum: true }), '16JD', 'Set Checksum');
-        cToBe(crf.encode(0, { checksum: true }), '00', 'Set Checksum (value 0)');
+        const crf_sum = new B({ variant: 'crockford', checksum: true });
+        cToBe(crf_sum.encode(1234), '16JD', 'Set Checksum');
+        cToBe(crf_sum.encode(0), '00', 'Set Checksum (value 0)');
 
-        cToBe(crf.encode(1234, { split: 2 }), '16-J', 'Set split (value 2)');
-        cToBe(crf.encode(123456, { split: 1 }), '3-R-J-0', 'Set split (value 1)');
-        cToBe(crf.encode(123456, { split: 2 }), '3R-J0', 'Set split (value 2)');
-        cToBe(crf.encode(123456, { split: 3 }), '3RJ-0', 'Set split (value 3)');
-        cToBe(crf.encode(123456, { split: 4 }), '3RJ0', 'Set split (value 4)');
+        const crf_split_1 = new B({ variant: 'crockford', split: 1 });
+        const crf_split_2 = new B({ variant: 'crockford', split: 2 });
+        const crf_split_3 = new B({ variant: 'crockford', split: 3 });
+        const crf_split_4 = new B({ variant: 'crockford', split: 4 });
+        cToBe(crf_split_2.encode(1234), '16-J', 'Set split (value 2)');
+        cToBe(crf_split_1.encode(123456), '3-R-J-0', 'Set split (value 1)');
+        cToBe(crf_split_2.encode(123456), '3R-J0', 'Set split (value 2)');
+        cToBe(crf_split_3.encode(123456), '3RJ-0', 'Set split (value 3)');
+        cToBe(crf_split_4.encode(123456), '3RJ0', 'Set split (value 4)');
         lResult();
 
         lStart('Crockford Base32 Decode');
         cToBe(crf.decode(), '0x0', 'Decode'); // 0x0
         cToBe(Number(crf.decode('16J')), 1234, 'Decode'); // 0x04d2
         cToBe(Number(crf.decode('3RJ0')), 123456, 'Decode');
-        cToBe(Number(crf.decode('16JD', { checksum: true })), 1234, 'Checksum');
+        cToBe(Number(crf_sum.decode('16JD')), 1234, 'Checksum');
         cToBe(Number(crf.decode('3r-j0')), 123456, 'Split');
         cToBe(Number(crf.decode('IiLl10Oo')), 35468115968, 'ilo (IiLl10Oo->11111000)');
-        cToBe(Number(crf.decode('1-4-S-C-0-P-JV', { checksum: true })), 1234567890, 'Split and Checksum');
-        cToBe(ArrayBuffer.isView(crf.decode('-14SC--0PJV-', { checksum: true, raw: true })), true, 'Split, Checksum and return Uint8Array');
+        cToBe(Number(crf_sum.decode('1-4-S-C-0-P-JV')), 1234567890, 'Split and Checksum');
+        const crf_sum_raw = new B({ variant: 'crockford', checksum: true, raw: true });
+        cToBe(ArrayBuffer.isView(crf_sum_raw.decode('-14SC--0PJV-')), true, 'Split, Checksum and return Uint8Array');
         lResult();
 
         lStart('Decode RegExp \\s');
         cToBe(b32.decode("MZX\n\r W 6 Y T B O \t  I======"), 'foobar', 'Base32');
-        cToBe(Number(crf.decode("1-4\n-S\r-C-\t 0-P-JV", { checksum: true })), 1234567890, 'Crockford');
+        cToBe(Number(crf_sum.decode("1-4\n-S\r-C-\t 0-P-JV")), 1234567890, 'Crockford');
         lResult();
 
         lStart('Return Array');
-        const b32_arr = new B({ 'array': true, raw: true });
-        const ret_b32_arr=b32_arr.decode('MZXW6YTBOI======');
+        const b32_arr = new B({ array: true });
+        const ret_b32_arr = b32_arr.decode('MZXW6YTBOI======');
         cToBe(ret_b32_arr.data, 'foobar', 'Base32');
 
-        const crf_arr = new B({ variant: 'crockford', 'array': true });
-        const ret_crf_arr=crf_arr.decode('14SC0PJV0', { checksum: true });
+        const crf_arr = new B({ variant: 'crockford', array: true, checksum: true });
+        const ret_crf_arr = crf_arr.decode('14SC0PJV0');
         cToBe(ret_crf_arr.data, '0x0', 'Crockford: error value');
         cToBe(ret_crf_arr.error.isError, true, 'isError');
         cToBe(ret_crf_arr.error.message, 'Invalid data: Checksum error.', 'message');

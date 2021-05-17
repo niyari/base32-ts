@@ -30,7 +30,7 @@ let base32_decoded = base32.decode('MZXW6YTBOI======');
 
 ### RFC4648_HEX
 ```js
-const base32_hex = new Base32({ variant: 'hex'});
+const base32_hex = new Base32({ variant: 'hex' });
 base32_hex.encode('foobar');
 // str = "CPNMUOJ1E8======"
 base32_hex.decode('CPNMUOJ1E8======');
@@ -56,8 +56,9 @@ base32.encode('Tofu on Fire!📛'); // (📛 = Name Badge:for Japanese preschool
 
 ## API(Options)
 ```
-new Base32([option]);
+new Base32([{ [variant] [,padding] [,raw] [,checksum] [,split] }]);
 ```
+
 ### Variant
 ```
 { variant: '<string>' }
@@ -76,12 +77,13 @@ new Base32([option]);
 
 
 ### Encode: Set padding ( = ) 
-_ | RFC4648 | HEX | Clockwork  | Crockford
+```
+{ padding: <bool> }
+```
+
+| | RFC4648 | HEX | Clockwork  | Crockford
 ---: | :---: | :---: | :---: | :---:
-**default**| True | True | False | -
-```
-{'padding':<bool>}
-```
+| default | True | True | False | -
 
 ```js
 const base32_np = new Base32({ padding: false }); // RFC4648 no padding
@@ -94,21 +96,26 @@ b32_cw_pad.encode('foobar');
 
 
 ### Decode: Raw
-Return Uint8Array.
+Return Uint8Array object.
 ```
-base32.decode(data, { raw: <bool> });
+{ raw: <bool> }
 ```
 
-_ | RFC4648 | HEX | Clockwork  | Crockford
+| | RFC4648 | HEX | Clockwork  | Crockford
 ---: | :---: | :---: | :---: | :---:
-**default**| False | False | False | False(hexadecimal string) 
+| default | False | False | False | False(hexadecimal string) 
 
 ```js
+const base32 = new Base32();
 base32.decode('MZXW6YTBOI======'); // (default)
-base32.decode('MZXW6YTBOI======', { raw: false });
+const base32_raw0 = new Base32({ raw: false });
+base32_raw0.decode('MZXW6YTBOI======');
 // Return value: String
 
-base32.decode('MZXW6YTBOI======', { raw: true });
+const base32_raw1 = new Base32({ raw: true });
+base32_raw1.decode('MZXW6YTBOI======');
+const base32_crockford_raw = new Base32({ variant: 'crockford', raw: true });
+base32_crockford_raw.decode(123456);
 // Return value: Uint8Array object
 ```
 
@@ -134,35 +141,43 @@ base32_crockford.decode('IiLl10Oo');
 
 ## API(Options)
 ```
-new Base32({ variant: 'crockford'});
+{ variant: 'crockford' }
 ```
-### Encode: Checksum
+
+### Checksum
 ```
-crockford.encode(integer, { checksum: <bool> });
+{ variant: 'crockford', checksum: <bool> }
 ```
+
+| | RFC4648 | HEX | Clockwork  | Crockford
+---: | :---: | :---: | :---: | :---:
+| default | - | - | - | False
+
 ```js
-base32_crockford.encode(1234, { checksum: true });
+const base32_crockford = new Base32({ variant: 'crockford', checksum: true });
+base32_crockford.encode(1234);
 // str = "16JD"
-base32_crockford.decode('16JD', { checksum: true });
+base32_crockford.decode('16JD');
 // str = "0x04d2" = 1234
 ```
 
 
 ### Encode: Split
 ```
-crockford.encode(integer, { split: <number> });
-```
-```js
-base32_crockford.encode(123456, { split: 2 });
-// str = "3R-J0"
-base32_crockford.encode(123456, { split: 1 });
-// str = "3-R-J-0"
+{ variant: 'crockford', split: <unsigned integer> }
 ```
 
-### Decode: Raw
+| | RFC4648 | HEX | Clockwork  | Crockford
+---: | :---: | :---: | :---: | :---:
+| default | - | - | - | 0
+
 ```js
-base32_crockford.decode(123456, { raw: true });
-// Uint8Array object
+const base32_crockford = new Base32({ variant: 'crockford', split: 2 });
+base32_crockford.encode(123456);
+// str = "3R-J0"
+const base32_crockford_s1 = new Base32({ variant: 'crockford', split: 1 });
+base32_crockford_s1.encode(123456);
+// str = "3-R-J-0"
 ```
 
 
