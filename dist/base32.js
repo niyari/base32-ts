@@ -15,13 +15,16 @@ export class Base32 {
         if (options.array !== undefined && options.array) {
             mode.array = true;
         }
-        if (mode.name === 'crockford') {
-            this.encode = this.crockfordEncoder;
-            this.decode = this.crockfordDecoder;
+        if (options.raw !== undefined && options.raw) {
+            mode.raw = true;
         }
-        else {
-            this.encode = this.multiEncoder;
-            this.decode = this.multiDecoder;
+        if (mode.name === "crockford") {
+            if (options.split !== undefined && options.split) {
+                mode.split = parseInt('0' + options.split);
+            }
+            if (options.checksum !== undefined && options.checksum) {
+                mode.checksum = true;
+            }
         }
     }
     setMode(variant = '4648') {
@@ -58,8 +61,7 @@ export class Base32 {
             name: '4648'
         };
     }
-    crockfordEncoder(input, options = {}) {
-        this.resetError();
+    crockfordEncoder(input) {
         let input32 = '';
         let output = '';
         const dic = this._mode.dic;
@@ -74,7 +76,7 @@ export class Base32 {
         if (input32.length < 1) {
             this.setError('Invalid data: input number.');
             console.log("Invalid data: input number.");
-            return this.returnArray('');
+            return '';
         }
         const check_symbol = () => {
             const check_dic = '0123456789ABCDEFGHJKMNPQRSTVWXYZ*~$=';
@@ -84,19 +86,18 @@ export class Base32 {
         (input32.split('')).map(index => {
             output += dic[parseInt(index, 32)];
         });
-        if (options.checksum) {
+        if (this._mode.checksum) {
             output += check_symbol();
         }
-        if (options.split && Number.isInteger(options.split)) {
-            if (options.split > 0 && output.length > 0) {
-                const reg = new RegExp('(.{1,' + options.split + '})', 'g');
+        if (this._mode.split && this._mode.split > 0) {
+            if (output.length > 0) {
+                const reg = new RegExp('(.{1,' + this._mode.split + '})', 'g');
                 output = output.match(reg).join('-');
             }
         }
-        return this.returnArray(output);
+        return output;
     }
     multiEncoder(input) {
-        this.resetError();
         if (typeof input !== "object") {
             input = new TextEncoder().encode(input);
         }
@@ -121,10 +122,9 @@ export class Base32 {
                 output += '=';
             }
         }
-        return this.returnArray(output);
+        return output;
     }
-    crockfordDecoder(input = '0', options = {}) {
-        this.resetError();
+    crockfordDecoder(input = '0') {
         input = input.toUpperCase().replace(/[-\s]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
         if (this._mode.re.test(input) === false) {
             this.setError('Invalid data: input strings.');
@@ -133,7 +133,7 @@ export class Base32 {
         }
         const dic = this._mode.dic;
         const check_symbol = input.slice(-1);
-        if (options.checksum) {
+        if (this._mode.checksum) {
             input = input.slice(0, -1);
         }
         const length = input.length;
@@ -158,7 +158,7 @@ export class Base32 {
         if (value > 0 || input === '0') {
             calcValue();
         }
-        if (output.length > 0 && options.checksum) {
+        if (output.length > 0 && this._mode.checksum) {
             const verify_symbol = (hexStr) => {
                 return (BigInt('0x' + hexStr) % BigInt(37) !== BigInt('0123456789ABCDEFGHJKMNPQRSTVWXYZ*~$=U'.indexOf(check_symbol)));
             };
@@ -168,18 +168,17 @@ export class Base32 {
             }
         }
         if (this._lastError.isError) {
-            if (options.raw) {
-                return this.returnArray(new Uint8Array(1));
+            if (this._mode.raw) {
+                return new Uint8Array(1);
             }
             outputHexStr = '0';
         }
-        if (options.raw) {
-            return this.returnArray(output);
+        if (this._mode.raw) {
+            return output;
         }
-        return this.returnArray(('0x' + outputHexStr).replace(/(^0x0+)(?<!0$)/, '0x'));
+        return '0x' + (outputHexStr.replace(/(^0+)(?!$)/, ''));
     }
-    multiDecoder(input = '', options = {}) {
-        this.resetError();
+    multiDecoder(input = '') {
         input = input.toUpperCase().replace(/\=+$/, '').replace(/[\s]/g, '');
         if (this._mode.name === 'clockwork') {
             input = input.replace(/O/g, '0').replace(/[IL]/g, '1');
@@ -203,15 +202,12 @@ export class Base32 {
                 offset -= 8;
             }
         }
-        if (options.raw) {
-            return this.returnArray(output);
+        if (this._mode.raw) {
+            return output;
         }
-        return this.returnArray(new TextDecoder().decode(output.buffer));
+        return new TextDecoder().decode(output.buffer);
     }
     returnArray(data) {
-        if (!this._mode.array) {
-            return data;
-        }
         let ret = { data: data };
         if (this._lastError.isError) {
             ret.error = this._lastError;
@@ -224,6 +220,36 @@ export class Base32 {
     resetError() {
         this._lastError = { isError: !1, message: '' };
     }
+    encode(input) {
+        this.resetError();
+        let data;
+        if (this._mode.name === 'crockford') {
+            data = this.crockfordEncoder(input);
+        }
+        else {
+            data = this.multiEncoder(input);
+        }
+        if (this._mode.array) {
+            return this.returnArray(data);
+        }
+        return data;
+    }
+    ;
+    decode(input) {
+        this.resetError();
+        let data;
+        if (this._mode.name === 'crockford') {
+            data = this.crockfordDecoder(input);
+        }
+        else {
+            data = this.multiDecoder(input);
+        }
+        if (this._mode.array) {
+            return this.returnArray(data);
+        }
+        return data;
+    }
+    ;
     lasterror() {
         return this._lastError;
     }

@@ -1,41 +1,38 @@
 /*! github.com/niyari/base32-ts/ MIT */
 
 type Variant = '3548' | '4648' | 'hex' | 'clockwork' | 'maki' | 'wah' | 'crockford' | '';
+type CrockFordEncoderInput = bigint | Number;
+type MultiEncoderInput = Uint8Array | string;
 interface ModeArray {
     dic: string;
-    padding: boolean;
     re: RegExp;
     name: Variant;
+    padding: boolean;
     array?: boolean;
+    raw?: boolean;
+    split?: number; // CrockFordDecoder
+    checksum?: boolean; // CrockFordDecoder
 }
 interface Base32Options {
     variant?: Variant;
     padding?: boolean;
     array?: boolean;
-}
-interface DecoderOption {
     raw?: boolean;
-}
-interface CrockFordEncoderOptions {
     split?: number;
     checksum?: boolean;
 }
-interface CrockFordDecoderOptions {
-    checksum?: boolean;
-    raw?: boolean;
-}
-interface LastErrorTypes {
+interface ErrorArray {
     isError: boolean;
     message: string;
 }
 interface ReturnArray {
     data: string | ArrayBuffer;
-    error?: LastErrorTypes;
+    error?: ErrorArray;
 }
 
 export class Base32 {
     private _mode: ModeArray = { dic: '', padding: true, re: / /, name: '' };
-    private _lastError: LastErrorTypes = { isError: false, message: '' };
+    private _lastError: ErrorArray = { isError: false, message: '' };
 
     constructor(options: Base32Options = {}) {
         let mode = this._mode = this.setMode(options.variant);
@@ -49,12 +46,16 @@ export class Base32 {
         if (options.array !== undefined && options.array) {
             mode.array = true;
         }
-        if (mode.name === 'crockford') {
-            this.encode = this.crockfordEncoder;
-            this.decode = this.crockfordDecoder;
-        } else {
-            this.encode = this.multiEncoder;
-            this.decode = this.multiDecoder;
+        if (options.raw !== undefined && options.raw) {
+            mode.raw = true;
+        }
+        if (mode.name === "crockford") {
+            if (options.split !== undefined && options.split) {
+                mode.split = parseInt('0' + options.split);
+            }
+            if (options.checksum !== undefined && options.checksum) {
+                mode.checksum = true;
+            }
         }
     }
 
@@ -93,9 +94,7 @@ export class Base32 {
         }
     }
 
-    private crockfordEncoder(input: bigint | Number, options: CrockFordEncoderOptions = {}): string | ReturnArray {
-        this.resetError();
-
+    private crockfordEncoder(input: CrockFordEncoderInput): string {
         let input32 = '';
         let output = '';
         const dic = this._mode.dic;
@@ -111,7 +110,7 @@ export class Base32 {
         if (input32.length < 1) {
             this.setError('Invalid data: input number.');
             console.log("Invalid data: input number.");
-            return <string | ReturnArray>this.returnArray('');
+            return '';
         }
 
         const check_symbol = () => {
@@ -124,22 +123,20 @@ export class Base32 {
             output += dic[parseInt(index, 32)];
         });
 
-        if (options.checksum) {
+        if (this._mode.checksum) {
             output += check_symbol();
         }
 
-        if (options.split && Number.isInteger(options.split)) {
-            if (options.split > 0 && output.length > 0) {
-                const reg = new RegExp('(.{1,' + options.split + '})', 'g');
+        if (this._mode.split && this._mode.split > 0) {
+            if (output.length > 0) {
+                const reg = new RegExp('(.{1,' + this._mode.split + '})', 'g');
                 output = output.match(reg)!.join('-');
             }
         }
-        return <string | ReturnArray>this.returnArray(output);
+        return output;
     }
 
-    private multiEncoder(input: Uint8Array | string): string | ReturnArray {
-        this.resetError();
-
+    private multiEncoder(input: MultiEncoderInput): string {
         if (typeof input !== "object") {
             input = new TextEncoder().encode(input);
         }
@@ -168,11 +165,10 @@ export class Base32 {
                 output += '=';
             }
         }
-        return <string | ReturnArray>this.returnArray(output);
+        return output;
     }
 
-    private crockfordDecoder(input: string = '0', options: CrockFordDecoderOptions = {}): string | ArrayBuffer | ReturnArray {
-        this.resetError();
+    private crockfordDecoder(input: string = '0'): string | ArrayBuffer {
         input = input.toUpperCase().replace(/[-\s]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
         if (this._mode.re.test(input) === false) {
             this.setError('Invalid data: input strings.');
@@ -182,7 +178,7 @@ export class Base32 {
 
         const dic = this._mode.dic;
         const check_symbol = input.slice(-1);
-        if (options.checksum) {
+        if (this._mode.checksum) {
             input = input.slice(0, -1);
         }
         const length = input.length;
@@ -209,7 +205,7 @@ export class Base32 {
             calcValue();
         }
 
-        if (output.length > 0 && options.checksum) {
+        if (output.length > 0 && this._mode.checksum) {
             const verify_symbol = (hexStr: string) => { // '01 ... =U'.length = 37
                 return (BigInt('0x' + hexStr) % BigInt(37) !== BigInt('0123456789ABCDEFGHJKMNPQRSTVWXYZ*~$=U'.indexOf(check_symbol)));
             };
@@ -220,20 +216,18 @@ export class Base32 {
         }
 
         if (this._lastError.isError) {
-            if (options.raw) {
-                return this.returnArray(new Uint8Array(1));
+            if (this._mode.raw) {
+                return new Uint8Array(1);
             }
             outputHexStr = '0';
         }
-        if (options.raw) {
-            return this.returnArray(output);
+        if (this._mode.raw) {
+            return output;
         }
-        return this.returnArray(('0x' + outputHexStr).replace(/(^0x0+)(?<!0$)/, '0x'));
+        return '0x' + (outputHexStr.replace(/(^0+)(?!$)/, ''));
     }
 
-    private multiDecoder(input: string = '', options: DecoderOption = {}): string | ArrayBuffer | ReturnArray {
-        this.resetError();
-
+    private multiDecoder(input: string = ''): string | ArrayBuffer {
         input = input.toUpperCase().replace(/\=+$/, '').replace(/[\s]/g, '');
         if (this._mode.name === 'clockwork') {
             input = input.replace(/O/g, '0').replace(/[IL]/g, '1');
@@ -262,16 +256,13 @@ export class Base32 {
             }
         }
 
-        if (options.raw) {
-            return this.returnArray(output);
+        if (this._mode.raw) {
+            return output;
         }
-        return this.returnArray(new TextDecoder().decode(output.buffer));
+        return new TextDecoder().decode(output.buffer);
     }
 
-    private returnArray(data: string | ArrayBuffer): string | ArrayBuffer | ReturnArray {
-        if (!this._mode.array) {
-            return <string | ArrayBuffer>data;
-        }
+    private returnArray(data: string | ArrayBuffer): ReturnArray {
         let ret: ReturnArray = { data: data };
         if (this._lastError.isError) {
             ret.error = this._lastError;
@@ -287,11 +278,35 @@ export class Base32 {
         this._lastError = { isError: !1, message: '' };
     }
 
-    public encode;
+    public encode(input: MultiEncoderInput | CrockFordEncoderInput): string | ReturnArray {
+        this.resetError();
+        let data: string;
+        if (this._mode.name === 'crockford') {
+            data = this.crockfordEncoder(<CrockFordEncoderInput>input);
+        } else {
+            data = this.multiEncoder(<MultiEncoderInput>input);
+        }
+        if (this._mode.array) {
+            return this.returnArray(data);
+        }
+        return data;
+    };
 
-    public decode;
+    public decode(input: string): string | ArrayBuffer | ReturnArray {
+        this.resetError();
+        let data: string | ArrayBuffer;
+        if (this._mode.name === 'crockford') {
+            data = this.crockfordDecoder(input);
+        } else {
+            data = this.multiDecoder(input);
+        }
+        if (this._mode.array) {
+            return this.returnArray(data);
+        }
+        return data;
+    };
 
-    public lasterror(): LastErrorTypes {
+    public lasterror(): ErrorArray {
         return this._lastError;
     }
 
