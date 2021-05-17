@@ -8,8 +8,10 @@ import { Base32 as B } from "../dist/base32.js";
     }
     const bEnd = () => {
         let endT = performance.now();
-        console.log(" \u001b[42m🕒 \u001b[0m\u001b[32m " + bCount + " count\u001b[0m",
-            "\u001b[90m" + (endT - _sT).toPrecision(4) + "ms\u001b[0m ", Math.round(bCount / (endT - _sT) * 1000 * 1000) / 1000 + " per second.\n");
+        console.log("\u001b[32m " + bCount + " requests\u001b[0m",
+            "\u001b[90m" + (endT - _sT).toPrecision(4) + " ms\u001b[0m",
+            Math.round(bCount / (endT - _sT) * 1000 * 1000) / 1000 + " per second.\n",
+            'Time per request: ' + (endT - _sT) / bCount + " ms.\n");
     }
     try {
 
