@@ -18,6 +18,7 @@ import { Base32 as B } from "../dist/base32.js";
         const b32 = new B();
         const clkw = new B({ variant: 'clockwork' });
         const crf = new B({ variant: 'crockford' });
+        const crf_c = new B({ variant: 'crockford', checksum: true });
         const b32_arr = new B({ 'array': true });
         const crf_arr = new B({ variant: 'crockford', 'array': true });
         const rnd = () => { return Math.random().toString(16) }
@@ -76,6 +77,13 @@ import { Base32 as B } from "../dist/base32.js";
             crf_arr.decode(crf.encode(i ^ 2));
         }
         bEnd();
+
+        bStart('base32_crockford_checksum.encode');
+        for (let i = 0; i < bCount; i++) {
+            crf_c.encode(i ^ 2);
+        }
+        bEnd();
+
 
         //implementation standard of the node.js
         bStart('nodejs:ascii to base64 encode');
