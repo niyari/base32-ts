@@ -78,16 +78,11 @@ export class Base32 {
             console.log("Invalid data: input number.");
             return '';
         }
-        const check_symbol = () => {
-            const check_dic = '0123456789ABCDEFGHJKMNPQRSTVWXYZ*~$=';
-            // check_symbol.length + 1 = 37
-            return check_dic[Number(BigInt(input) % BigInt(37))];
-        };
         (input32.split('')).map(index => {
             output += dic[parseInt(index, 32)];
         });
-        if (this._mode.checksum) {
-            output += check_symbol();
+        if (this._mode.checksum) { // check_symbol.length + 1 = 37           
+            output += (dic + '*~$=U')[Number(BigInt(input) % BigInt(37))];
         }
         if (this._mode.split && this._mode.split > 0) {
             if (output.length > 0) {
@@ -117,10 +112,8 @@ export class Base32 {
         if (offset > 0) {
             output += dic[(value << (5 - offset)) & 31];
         }
-        if (this._mode.padding) {
-            while (output.length % 8 !== 0) {
-                output += '=';
-            }
+        if (this._mode.padding && output.length % 8) {
+            output += '='.repeat(8 - (output.length % 8));
         }
         return output;
     }
@@ -160,7 +153,7 @@ export class Base32 {
         }
         if (output.length > 0 && this._mode.checksum) {
             const verify_symbol = (hexStr) => {
-                return (BigInt('0x' + hexStr) % BigInt(37) !== BigInt('0123456789ABCDEFGHJKMNPQRSTVWXYZ*~$=U'.indexOf(check_symbol)));
+                return (BigInt('0x' + hexStr) % BigInt(37) !== BigInt((dic + '*~$=U').indexOf(check_symbol)));
             };
             if (verify_symbol(outputHexStr)) {
                 this.setError('Invalid data: Checksum error.');
