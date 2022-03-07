@@ -1,7 +1,7 @@
 /*! github.com/niyari/base32-ts/ MIT */
 
 type Variant = '3548' | '4648' | 'hex' | 'clockwork' | 'maki' | 'wah' | 'crockford' | '';
-type CrockFordEncoderInput = bigint | Number;
+type CrockFordEncoderInput = bigint | number;
 type MultiEncoderInput = Uint8Array | string;
 interface ModeArray {
     dic: string;
@@ -118,7 +118,7 @@ export class Base32 {
         });
 
         if (this._mode.checksum) { // check_symbol.length + 1 = 37           
-            output += (dic + '*~$=')[Number(BigInt(input) % BigInt(37))];
+            output += (dic + '*~$=U')[Number(BigInt(input) % BigInt(37))];
         }
 
         if (this._mode.split && this._mode.split > 0) {

@@ -1,6 +1,6 @@
 /*! github.com/niyari/base32-ts/ MIT */
 declare type Variant = '3548' | '4648' | 'hex' | 'clockwork' | 'maki' | 'wah' | 'crockford' | '';
-declare type CrockFordEncoderInput = bigint | Number;
+declare type CrockFordEncoderInput = bigint | number;
 declare type MultiEncoderInput = Uint8Array | string;
 interface Base32Options {
     variant?: Variant;

@@ -82,7 +82,7 @@ export class Base32 {
             output += dic[parseInt(index, 32)];
         });
         if (this._mode.checksum) { // check_symbol.length + 1 = 37           
-            output += (dic + '*~$=')[Number(BigInt(input) % BigInt(37))];
+            output += (dic + '*~$=U')[Number(BigInt(input) % BigInt(37))];
         }
         if (this._mode.split && this._mode.split > 0) {
             if (output.length > 0) {
