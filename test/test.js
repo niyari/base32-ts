@@ -38,22 +38,22 @@ import { Base32 as B } from "../dist/base32.js";
                 'hex': {
                     dic: '0123456789ABCDEFGHIJKLMNOPQRSTUV',
                     padding: true,
-                    re: '^(()|[A-V0-9=]+)$',
+                    re: '^[A-V0-9]+$',
                     name: 'hex'
                 }, 'clockwork': {
                     dic: '0123456789ABCDEFGHJKMNPQRSTVWXYZ',
                     padding: false,
-                    re: '^(()|[A-TV-Z0-9=]+)$',
+                    re: '^[A-TV-Z0-9]+$',
                     name: 'clockwork'
                 }, 'crockford': {
                     dic: '0123456789ABCDEFGHJKMNPQRSTVWXYZ',
                     padding: false,
-                    re: '^(()|[A-TV-Z0-9*~$=U]+)$',
+                    re: '^[A-TV-Z0-9*~$=U]+$',
                     name: 'crockford'
                 }, '4648': {
                     dic: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567',
                     padding: true,
-                    re: '^(()|[A-Z2-7=]+)$',
+                    re: '^[A-Z2-7]+$',
                     name: '4648'
                 }
             };
@@ -166,7 +166,7 @@ import { Base32 as B } from "../dist/base32.js";
         lResult();
 
         lStart('Decode RegExp \\s');
-        cToBe(b32.decode("MZX\n\r W 6 Y T B O \t  I======"), 'foobar', 'Base32');
+        cToBe(b32.decode("MZ\n X\n\r W 6 Y  TB O \t  I= == ==      ="), 'foobar', 'Base32');
         cToBe(Number(crf_sum.decode("1-4\n-S\r-C-\t 0-P-JV")), 1234567890, 'Crockford');
         lResult();
 
