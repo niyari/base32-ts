@@ -81,7 +81,7 @@ export class Base32 {
                 return {
                     dic: '0123456789ABCDEFGHJKMNPQRSTVWXYZ',
                     padding: false,
-                    re: /^[A-TV-Z0-9*~$=U]+$/,
+                    re: /^[A-TV-Z0-9]+[*~$=U]?$/,
                     name: 'crockford'
                 }
             default: // RFC3548 or RFC4648

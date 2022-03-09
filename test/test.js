@@ -48,7 +48,7 @@ import { Base32 as B } from "../dist/base32.js";
                 }, 'crockford': {
                     dic: '0123456789ABCDEFGHJKMNPQRSTVWXYZ',
                     padding: false,
-                    re: '^[A-TV-Z0-9*~$=U]+$',
+                    re: '^[A-TV-Z0-9]+[*~$=U]?$',
                     name: 'crockford'
                 }, '4648': {
                     dic: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567',
