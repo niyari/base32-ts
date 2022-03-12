@@ -6,54 +6,84 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@niyari/base32-ts</title>
+    <style>
+        textarea {
+            min-width: 25%;
+            min-height: 4.5em;
+            width: 40%;
+        }
+
+        .error-text {
+            color: red;
+        }
+    </style>
 </head>
 
 <body>
-    <a href="https://github.com/niyari/base32-ts">Repository</a><br><a
-        href="https://niyari.github.io/base32-ts/">README</a><br>
+    <div>
+        @niyari/base32-ts / <a href="https://github.com/niyari/base32-ts">Repository</a> / <a
+            href="https://niyari.github.io/base32-ts/">README</a>
+    </div>
     <section>
         <div>
-            <p>Input value <span id="in_error" style="color: red;"></span></p>
+            <div>
+                Input value <span id="in_error" class="error-text"></span>
+            </div>
             <textarea type="text" style="width: 50%" placeholder="input" id="input" rows="4"></textarea>
         </div>
     </section>
     <hr>
     <section>
         <div>
-            <p>Base32</p>
-            <textarea type="text" style="width: 25%" placeholder="Encode" id="base32_e" rows="4"></textarea>
-            <textarea type="text" style="width: 25%" placeholder="Decode" id="base32_d" rows="4"></textarea>
+            <div>
+                Base32
+            </div>
+            <textarea type="text" placeholder="Encode" id="base32_e" rows="4"></textarea>
+            <textarea type="text" placeholder="Decode" id="base32_d" rows="4"></textarea>
         </div>
     </section>
 
     <section>
         <div>
-            <p>Base32_HEX</p>
-            <textarea type="text" style="width: 25%" placeholder="Encode" id="hex_e" rows="4"></textarea>
-            <textarea type="text" style="width: 25%" placeholder="Decode" id="hex_d" rows="4"></textarea>
+            <div>
+                Base32_HEX
+            </div>
+            <textarea type="text" placeholder="Encode" id="hex_e" rows="4"></textarea>
+            <textarea type="text" placeholder="Decode" id="hex_d" rows="4"></textarea>
         </div>
     </section>
 
     <section>
         <div>
-            <p>Clockwork Base32</p>
-            <textarea type="text" style="width: 25%" placeholder="Encode" id="cw_e" rows="4"></textarea>
-            <textarea type="text" style="width: 25%" placeholder="Decode" id="cw_d" rows="4"></textarea>
+            <div>
+                Clockwork Base32
+            </div>
+            <textarea type="text" placeholder="Encode" id="cw_e" rows="4"></textarea>
+            <textarea type="text" placeholder="Decode" id="cw_d" rows="4"></textarea>
         </div>
     </section>
     <hr>
     <section>
         <div>
-            <p>Crockford</p>
-            <p>input value (integer)<span id="cf_error" style="color: red;"></span></p>
+            <div>
+                Crockford
+            </div>
+            <div>
+                <input id="cf_checksum" type="checkbox" value="1"><label for="cf_checksum">Checksum</label>
+                <input id="cf_split" type="checkbox" value="1"><label for="cf_split">split(2)</label>
+            </div>
+            <div>
+                <span id="cf_error" class="error-text"></span> Input value (Positive integer value. And the maximum
+                number that the browser supports.)
+            </div>
             <input type="tel" style="width: 50%" placeholder="number" id="input_cf">
         </div>
     </section>
     <hr>
     <section>
         <div>
-            <textarea type="text" style="width: 25%" placeholder="Encode" id="cf_e" rows="4"></textarea>
-            <textarea type="text" style="width: 25%" placeholder="Decode" id="cf_d" rows="4"></textarea>
+            <textarea type="text" placeholder="Encode" id="cf_e" rows="4"></textarea>
+            <textarea type="text" placeholder="Decode" id="cf_d" rows="4"></textarea>
         </div>
     </section>
 
@@ -85,11 +115,14 @@
             const hex_d = document.getElementById("hex_d");
             const cw_e = document.getElementById("cw_e");
             const cw_d = document.getElementById("cw_d");
+
+            const cf_checksum = document.getElementById("cf_checksum");
+            const cf_split = document.getElementById("cf_split");
             const cf_e = document.getElementById("cf_e");
             const cf_d = document.getElementById("cf_d");
 
 
-            input.addEventListener('change', (e) => {
+            input.addEventListener('input', (e) => {
                 cf_error.textContent = '';
                 base32_e.value = base32.encode(input.value);
                 base32_d.value = base32.decode(base32_e.value);
@@ -100,7 +133,24 @@
                 cw_e.value = base32_clockwork.encode(input.value);
                 cw_d.value = base32_clockwork.decode(cw_e.value);
             });
-            input_cf.addEventListener('change', (e) => {
+            // crockford
+            cf_checksum.addEventListener('change', (e) => {
+                // 本来はこのような使い方をしない。
+                if (base32_crockford._mode.checksum) {
+                    base32_crockford._mode.checksum = false;
+                } else {
+                    base32_crockford._mode.checksum = true;
+                }
+            });
+            cf_split.addEventListener('change', (e) => {
+                // 本来はこのような使い方をしない。
+                if (base32_crockford._mode.split === 2) {
+                    base32_crockford._mode.split = 0;
+                } else {
+                    base32_crockford._mode.split = 2;
+                }
+            });
+            input_cf.addEventListener('input', (e) => {
                 cf_error.textContent = '';
                 try {
                     let cf_input = BigInt(input_cf.value);
