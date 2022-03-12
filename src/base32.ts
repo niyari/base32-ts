@@ -65,7 +65,7 @@ export class Base32 {
                 return {
                     dic: '0123456789ABCDEFGHIJKLMNOPQRSTUV',
                     padding: true,
-                    re: /^(()|[A-V0-9=]+)$/,
+                    re: /^[A-V0-9]+$/,
                     name: 'hex'
                 }
             case 'maki':
@@ -74,14 +74,14 @@ export class Base32 {
                 return {
                     dic: '0123456789ABCDEFGHJKMNPQRSTVWXYZ',
                     padding: false,
-                    re: /^(()|[A-TV-Z0-9=]+)$/,
+                    re: /^[A-TV-Z0-9]+$/,
                     name: 'clockwork'
                 }
             case 'crockford':
                 return {
                     dic: '0123456789ABCDEFGHJKMNPQRSTVWXYZ',
                     padding: false,
-                    re: /^(()|[A-TV-Z0-9*~$=U]+)$/,
+                    re: /^[A-TV-Z0-9]+[*~$=U]?$/,
                     name: 'crockford'
                 }
             default: // RFC3548 or RFC4648
@@ -89,7 +89,7 @@ export class Base32 {
         return {
             dic: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567',
             padding: true,
-            re: /^(()|[A-Z2-7=]+)$/,
+            re: /^[A-Z2-7]+$/,
             name: '4648'
         }
     }
@@ -220,7 +220,7 @@ export class Base32 {
     }
 
     private multiDecoder(input: string = ''): string | ArrayBuffer {
-        input = input.toUpperCase().replace(/\=+$/, '').replace(/[\s]/g, '');
+        input = input.toUpperCase().replace(/\s|=/g, '');
         if (this._mode.name === 'clockwork') {
             input = input.replace(/O/g, '0').replace(/[IL]/g, '1');
         }
